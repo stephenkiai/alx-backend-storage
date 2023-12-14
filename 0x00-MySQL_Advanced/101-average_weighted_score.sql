@@ -1,4 +1,4 @@
--- Create a stored procedure named ComputeAverageWeightedScoreForUsers
+-- Task: Create a stored procedure named ComputeAverageWeightedScoreForUsers
 --       to compute and store the average weighted score for all students.
 DELIMITER //
 
