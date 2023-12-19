@@ -1,0 +1,2 @@
+// Script listing all matches name="Holberton school" in collection `school`
+db.school.find({ name: "Holberton school" })
