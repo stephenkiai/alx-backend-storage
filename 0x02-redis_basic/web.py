@@ -1,60 +1,40 @@
-import requests
-from cachetools import TTLCache
 import redis
+import requests
 from functools import wraps
-from typing import Dict
 
-# Redis client
-redis_client = redis.Redis()
-
-# Cache with a time-to-live (TTL) of 10 seconds
-cache = TTLCache(maxsize=100, ttl=10)
+r = redis.Redis()
 
 
-def cache_decorator(func):
-    @wraps(func)
+def url_access_count(method):
+    """Decorator for the get_page function."""
+    @wraps(method)
     def wrapper(url):
-        # Check if the result is already in the cache
-        cached_result = cache.get(url)
-        if cached_result:
-            print(f"Cache hit for {url}")
-            return cached_result
+        """Wrapper function."""
+        key = "cached:" + url
+        cached_value = r.get(key)
 
-        # If not in cache, call the original function
-        result = func(url)
+        if cached_value:
+            return cached_value.decode("utf-8") if cached_value else None
 
-        # Store the result in the cache with the URL as the key
-        cache[url] = result
+        # Get new content and update cache
+        key_count = "count:" + url
+        html_content = method(url)
 
-        # Update the count for the URL in Redis
-        update_url_count(url)
+        r.incr(key_count)
+        r.set(key, html_content, ex=10)
+        r.expire(key, 10)
 
-        return result
+        return html_content
 
     return wrapper
 
 
-def update_url_count(url: str) -> None:
-    # Update the count for the URL in Redis
-    count_key = f"count:{url}"
-    count = redis_client.get(count_key)
-    count = int(count) + 1 if count else 1
-    redis_client.set(count_key, count)
-    print(f"Accessed {url} {count} times")
-
-
-@cache_decorator
+@url_access_count
 def get_page(url: str) -> str:
-    # Make a request to the URL
-    response = requests.get(url)
-
-    # Return the HTML content
-    return response.text
+    """Obtain the HTML content of a particular URL."""
+    results = requests.get(url)
+    return results.text
 
 
-# Test the function
 if __name__ == "__main__":
-    # Test with a slow response URL
-    slow_url = "http://slowwly.robertomurray.co.uk"
-    html_content = get_page(slow_url)
-    print(html_content)
+    get_page('http://slowwly.robertomurray.co.uk')
