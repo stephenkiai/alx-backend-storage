@@ -33,4 +33,4 @@ class Cache:
 
     def get_int(self, key: str) -> int:
         """ get data and converts to integer """
-        return self.get(key, fn = lambda x: int(x))
+        return self.get(key, fn=lambda x: int(x))
